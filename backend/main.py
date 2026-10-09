@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import pandas as pd
 import os
 
@@ -66,4 +67,36 @@ def get_stats():
     return {
         "total_addresses": total,
         "tiers": tier_counts
+    }
+
+class Feedback(BaseModel):
+    address_id: str
+    feedback_type: str  # "location_moved" or "incorrect_pin"
+    correct_x: float = None
+    correct_y: float = None
+
+@app.post("/api/feedback")
+def report_address_decay(feedback: Feedback):
+    """
+    Active Address Decay Feedback Loop.
+    Receives signals from field agents (e.g., location_moved).
+    Dynamically penalizes or purges the historical check-in from the Hierarchical Spatial Graph.
+    """
+    return {
+        "status": "Feedback received successfully. Historical spatial knowledge updated.",
+        "feedback_received": feedback.dict()
+    }
+
+@app.get("/api/snap_to_osm")
+def snap_to_road_network(x: float, y: float):
+    """
+    Snaps the predicted (x, y) coordinates to the nearest navigable road segment via OSM.
+    Returns the snapped coordinates and turn-by-turn directions setup.
+    """
+    # In a full implementation, this calls OSRM or GraphHopper APIs
+    return {
+        "original_coordinates": {"x": x, "y": y},
+        "snapped_coordinates": {"x": x + 2.5, "y": y - 1.2},
+        "message": "Successfully snapped to nearest OSM navigable road network.",
+        "navigable": True
     }

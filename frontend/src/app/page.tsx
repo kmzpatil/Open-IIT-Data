@@ -8,6 +8,33 @@ export default function Home() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
+
+  const handleFeedback = async (id: string) => {
+    try {
+      const res = await fetch("http://localhost:8000/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address_id: id, feedback_type: "incorrect_pin" })
+      });
+      const data = await res.json();
+      setActionMessage(data.status);
+      setTimeout(() => setActionMessage(""), 4000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSnap = async (x: number, y: number) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/snap_to_osm?x=${x}&y=${y}`);
+      const data = await res.json();
+      setActionMessage(`Snapped to: ${data.snapped_coordinates.x}, ${data.snapped_coordinates.y}`);
+      setTimeout(() => setActionMessage(""), 4000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     fetch("http://localhost:8000/api/stats")
@@ -96,6 +123,7 @@ export default function Home() {
                       <th className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500 text-right">Coordinates</th>
                       <th className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500 text-right">Radius (m)</th>
                       <th className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Directions</th>
+                      <th className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm">
@@ -123,6 +151,14 @@ export default function Home() {
                         <td className="py-3 px-4 text-slate-500 max-w-[200px] truncate" title={r.directions}>
                           {r.directions || "—"}
                         </td>
+                        <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
+                          <button onClick={() => handleSnap(r.pin_x, r.pin_y)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded transition-colors">
+                            Snap OSM
+                          </button>
+                          <button onClick={() => handleFeedback(r.address_id)} className="text-[11px] font-medium text-red-600 hover:text-red-800 bg-red-50 px-2 py-1 rounded transition-colors">
+                            Decay Pin
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -136,6 +172,12 @@ export default function Home() {
           </section>
         )}
       </main>
+      
+      {actionMessage && (
+        <div className="fixed bottom-6 right-6 bg-slate-900 text-white text-sm px-4 py-3 rounded shadow-lg animate-in fade-in slide-in-from-bottom-5">
+          {actionMessage}
+        </div>
+      )}
     </div>
   );
 }
